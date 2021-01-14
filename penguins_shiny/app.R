@@ -10,9 +10,14 @@ ui <- fluidPage(
         sidebarPanel("put my widgets here!",
                      radioButtons(inputId = "penguin_species",
                                   label = "Choose penguin species:",
-                                  choices = c("Adelie","Chinstrap","Gentoo"))),
+                                  choices = c("Adelie","Chinstrap","Gentoo"),
+                                  ),
+        selectInput(inputId = "pt_color",
+                    label = "Select point color", choices = c("Awesome red!" = "red","Pretty purple" = "purple", "ORAAANGE" = "orange"))
+        ),
         mainPanel("Here's my graph!",
-                  plotOutput(outputId = "penguin_plot"))
+                  plotOutput(outputId = "penguin_plot"),
+                  tableOutput(outputId = "penguin_table"))
     )
 )
 
@@ -26,10 +31,24 @@ penguin_select <- reactive({
         filter(species == input$penguin_species)
 })
 
+penguin_table <- reactive({
+    penguins %>%
+        filter(species == input$penguin_species) %>%
+        group_by(sex) %>%
+        summarize(
+            mean_flip = mean(flipper_length_mm),
+            mean_mass = mean(body_mass_g)
+        )
+})
+
 output$penguin_plot <- renderPlot({
 
     ggplot(data = penguin_select(), aes(x=flipper_length_mm, y=body_mass_g))+
-        geom_point()
+        geom_point(color= input$pt_color)
+})
+
+output$penguin_table <- renderTable({
+    penguin_table()
 })
 
 
