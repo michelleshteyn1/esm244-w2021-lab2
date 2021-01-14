@@ -56,6 +56,115 @@ autoplot(penguin_pca,
 We have 88% of the data captured in this PCA biplot.
 
 
+### Part 2: ggplot2 customization & reading in different file types
+
+#### Read in an .xlsx file & do some wrangling
+
+```{r}
+fish_noaa <- read_excel(here("data","foss_landings.xlsx")) %>% 
+  clean_names() %>% 
+  mutate(across(where(is.character), tolower)) %>% 
+  mutate(nmfs_name = str_sub(nmfs_name, end = -4)) %>% 
+  filter(confidentiality == "public")
+```
+
+
+Make a customized graph:
+
+```{r}
+fish_plot <- ggplot(data = fish_noaa, aes(x=year, y=pounds))+
+  geom_line(aes(color=nmfs_name), show.legend = FALSE)+
+  theme_minimal()
+
+fish_plot
+
+ggplotly(fish_plot)
+
+
+### Use gghighlight to highlight certain series
+
+ggplot(data = fish_noaa, aes(x=year, y=pounds, group = nmfs_name))+
+  geom_line()+
+  theme_minimal() +
+  gghighlight(nmfs_name == "tunas") #highlight series based on a name matching 'tuna'
+
+
+ggplot(data = fish_noaa, aes(x=year, y=pounds, group = nmfs_name))+
+  geom_line(aes(color = nmfs_name))+
+  theme_minimal() +
+  gghighlight(max(pounds)>1e8) #highlight series where the maximum value for that series is greater than 1* 10^8. gghighlight knows you only want to highlight based on your specified condition!
+```
+
+
+
+#### Read in data from a URL, `lubridate()`, `mutate()`, make a graph with months in logical order
+
+```{r}
+monroe_wt <- read_csv("https://data.bloomington.in.gov/dataset/2c81cfe3-62c2-46ed-8fcf-83c1880301d1/resource/13c8f7aa-af51-4008-80a9-56415c7c931e/download/mwtpdailyelectricitybclear.csv") %>% clean_names()
+```
+
+
+```{r}
+monroe_ts <- monroe_wt %>% 
+  mutate(date = mdy(date)) %>% 
+  mutate(record_month = month(date)) %>% 
+  mutate(month_name = month.abb[record_month]) %>% 
+  mutate(month_name = fct_reorder(month_name, record_month))
+
+
+ggplot(data = monroe_ts, aes(month_name, y = total_k_wh))+
+  geom_jitter()
+  
+```
+
+
+
+### Part 3: Compound figures with `patchwork`
+
+```{r}
+graph_a <- ggplot(data = penguins, aes(x = body_mass_g, y=flipper_length_mm))+
+  geom_point()
+
+graph_b <- ggplot(data=penguins,aes(x=species,y=flipper_length_mm))+
+  geom_jitter(aes(color=species), show.legend = FALSE)
+
+# Use | to put graphs side by side
+# Use / to put graphs one over the other
+
+
+graph_c <- (graph_a | graph_b) / fish_plot & theme_dark()
+
+graph_c
+
+ggsave(here("fig","graph_c_ms.png"), width = 5, height = 6)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
